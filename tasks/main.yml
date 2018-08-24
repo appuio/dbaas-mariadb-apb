@@ -1,0 +1,81 @@
+---
+- name: update last operation
+  asb_last_operation:
+    description: "0%: Starting"
+
+- set_fact:
+    ensure_state: "{{ (apb_action == 'provision') | ternary('present', 'absent') }}"
+    secrets_path: "/etc/apb-secrets/apb-dbaas-db-credentials"
+
+- name: read DB credentials
+  set_fact:
+    mariadb_hostname: "{{ lookup('file', secrets_path ~ '/mariadb_hostname') }}"
+    mariadb_port: "{{ lookup('file', secrets_path ~ '/mariadb_port') }}"
+    mariadb_user: "{{ lookup('password', secrets_path ~ '/mariadb_user') }}"
+    mariadb_password: "{{ lookup('password', secrets_path ~ '/mariadb_password') }}"
+
+- name: generate DB credentials
+  when: apb_action == 'provision'
+  set_fact:
+    create_db_name: "{{ lookup('password', '/tmp/_name length=5 chars=ascii_letters') }}"
+    create_db_user: "{{ lookup('password', '/tmp/_user length=5 chars=ascii_letters') }}"
+    create_db_password: "{{ lookup('password', '/dev/null length=24 chars=ascii_letters') }}"
+
+- name: get generated DB credentials
+  when: apb_action == 'deprovision'
+  set_fact:
+    create_db_name: "{{ _apb_provision_creds.DB_NAME }}"
+    create_db_user: "{{ _apb_provision_creds.DB_USER }}"
+    create_db_password: "{{ _apb_provision_creds.DB_PASSWORD }}"
+
+- name: "{{ apb_action }} database"
+  mysql_db:
+    state: "{{ ensure_state }}"
+    name: "{{ create_db_name }}"
+    login_host: "{{ mariadb_hostname }}"
+    login_port: "{{ mariadb_port }}"
+    login_user: "{{ mariadb_user }}"
+    login_password: "{{ mariadb_password }}"
+
+- name: update last operation
+  asb_last_operation:
+    description: "50%: {{ apb_action }} database '{{ create_db_name }}'"
+
+- name: "{{ apb_action }} user"
+  mysql_user:
+    state: "{{ ensure_state }}"
+    name: "{{ create_db_user }}"
+    password: "{{ create_db_password }}"
+    priv: "{{ create_db_name }}.*:ALL"
+    host: "%"
+    login_host: "{{ mariadb_hostname }}"
+    login_port: "{{ mariadb_port }}"
+    login_user: "{{ mariadb_user }}"
+    login_password: "{{ mariadb_password }}"
+
+- name: update last operation
+  asb_last_operation:
+    description: "75%: {{ apb_action }} user '{{ create_db_user }}'"
+
+- name: "{{ apb_action }} OpenShift service"
+  k8s_v1_service:
+    state: "{{ ensure_state }}"
+    name: "{{ app_name }}"
+    namespace: "{{ namespace }}"
+    type: ExternalName
+    external_name: "{{ mariadb_hostname }}"
+
+- when: apb_action == 'provision'
+  name: Encode bind credentials
+  asb_encode_binding:
+    fields:
+      DB_TYPE: mariadb
+      DB_NAME: "{{ create_db_name }}"
+      DB_HOST: "{{ app_name }}"
+      DB_PORT: "{{ mariadb_port }}"
+      DB_USER: "{{ create_db_user }}"
+      DB_PASSWORD: "{{ create_db_password }}"
+
+- name: update last operation
+  asb_last_operation:
+    description: "100%: Done"
