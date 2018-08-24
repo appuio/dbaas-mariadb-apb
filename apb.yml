@@ -7,6 +7,8 @@ metadata:
   displayName: DBaaS - MariaDB (APB)
   dependencies: []
   providerDisplayName: APPUiO
+  imageUrl: >-
+    https://appuio.ch/images/appuio_logo-f81608f1.svg
 plans:
   - name: default
     description: This default plan creates a DB user and schema
