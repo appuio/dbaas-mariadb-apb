@@ -1,0 +1,15 @@
+version: 1.0
+name: dbaas-mariadb-apb
+description: MariaDB as a Service
+bindable: True
+async: optional
+metadata:
+  displayName: DBaaS - MariaDB (APB)
+  dependencies: []
+  providerDisplayName: APPUiO
+plans:
+  - name: default
+    description: This default plan creates a DB user and schema
+    free: True
+    metadata: {}
+    parameters: []
