@@ -1,4 +1,7 @@
 ---
+- debug:
+    msg: "Ansible version: {{ ansible_version.full }}"
+
 - name: update last operation
   asb_last_operation:
     description: "0%: Starting"

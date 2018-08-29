@@ -17,4 +17,6 @@ COPY . /opt/ansible/roles/dbaas-mariadb-apb
 RUN chmod -R g=u /opt/{ansible,apb} \
  && yum -y install MySQL-python python-mysqldb mysql && yum clean all
 
+#ENV BUNDLE_DEBUG=true
+
 USER apb
