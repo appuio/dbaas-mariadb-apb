@@ -1,6 +1,6 @@
 DOCKERHOST = docker.io
-DOCKERORG = mariadb-apb
-IMAGENAME = mariadb
+DOCKERORG = appuio
+IMAGENAME = dbaas-mariadb-apb
 TAG = latest
 USER=$(shell id -u)
 PWD=$(shell pwd)

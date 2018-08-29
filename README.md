@@ -3,6 +3,16 @@
 This Ansible playbook bundle provisions users and databases on a existing MariaDB instance.
 
 ## Installation
+Set up the Ansible service broker to import APBs from the Docker Hub appuio repository:
+```yaml
+registry:
+  - name: appuio
+    type: dockerhub
+    org: appuio
+    tag: latest
+    white_list: [.*-apb$]
+```
+
 To provide the admin user credentials to connect to the MariaDB, a secret with the name `dbaas-db-credentials` needs to exist in the Ansible service broker namespace:
 ```yaml
 apiVersion: v1
@@ -21,7 +31,7 @@ The Ansible service broker needs to be configured to mount the secret in provisi
 secrets:
 - title: DBaaS database credentials
   secret: dbaas-db-credentials
-  apb_name: localregistry-dbaas-mariadb-apb
+  apb_name: appuio-dbaas-mariadb-apb
 ```
 
 ## Development environment
