@@ -2,9 +2,9 @@
 - debug:
     msg: "Ansible version: {{ ansible_version.full }}"
 
-- name: update last operation
-  asb_last_operation:
-    description: "0%: Starting"
+# - name: update last operation
+#   asb_last_operation:
+#     description: "0%: Starting"
 
 - set_fact:
     ensure_state: "{{ (apb_action == 'provision') | ternary('present', 'absent') }}"
@@ -40,9 +40,9 @@
     login_user: "{{ mariadb_user }}"
     login_password: "{{ mariadb_password }}"
 
-- name: update last operation
-  asb_last_operation:
-    description: "50%: {{ apb_action }} database '{{ create_db_name }}'"
+# - name: update last operation
+#   asb_last_operation:
+#     description: "50%: {{ apb_action }} database '{{ create_db_name }}'"
 
 - name: "{{ apb_action }} user"
   mysql_user:
@@ -56,17 +56,21 @@
     login_user: "{{ mariadb_user }}"
     login_password: "{{ mariadb_password }}"
 
-- name: update last operation
-  asb_last_operation:
-    description: "75%: {{ apb_action }} user '{{ create_db_user }}'"
+# - name: update last operation
+#   asb_last_operation:
+#     description: "75%: {{ apb_action }} user '{{ create_db_user }}'"
 
-- name: "{{ apb_action }} OpenShift service"
-  k8s_v1_service:
-    state: "{{ ensure_state }}"
-    name: "{{ app_name }}"
-    namespace: "{{ namespace }}"
-    type: ExternalName
-    external_name: "{{ mariadb_hostname }}"
+# - name: "{{ apb_action }} OpenShift service"
+#   k8s_v1_service:
+#     state: "{{ ensure_state }}"
+#     name: "{{ app_name }}"
+#     namespace: "{{ namespace }}"
+#     type: ExternalName
+#     external_name: "{{ mariadb_hostname }}"
+#     ports:
+#     - name: mariadb
+#       port: 3306
+#       targetPort: 3306
 
 - when: apb_action == 'provision'
   name: Encode bind credentials
@@ -79,6 +83,6 @@
       DB_USER: "{{ create_db_user }}"
       DB_PASSWORD: "{{ create_db_password }}"
 
-- name: update last operation
-  asb_last_operation:
-    description: "100%: Done"
+# - name: update last operation
+#   asb_last_operation:
+#     description: "100%: Done"

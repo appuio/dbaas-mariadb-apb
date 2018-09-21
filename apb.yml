@@ -1,10 +1,10 @@
 version: 1.0
 name: dbaas-mariadb-apb
-description: MariaDB as a Service
+description: MariaDB as a Service (local)
 bindable: True
 async: optional
 metadata:
-  displayName: DBaaS - MariaDB (APB)
+  displayName: DBaaS - MariaDB (local APB)
   dependencies: []
   providerDisplayName: APPUiO
   imageUrl: >-
