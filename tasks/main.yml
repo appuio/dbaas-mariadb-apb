@@ -19,17 +19,29 @@
 
 - name: generate DB credentials
   when: apb_action == 'provision'
-  set_fact:
-    create_db_name: "{{ lookup('password', '/tmp/_name length=5 chars=ascii_letters') }}"
-    create_db_user: "{{ lookup('password', '/tmp/_user length=5 chars=ascii_letters') }}"
-    create_db_password: "{{ lookup('password', '/dev/null length=24 chars=ascii_letters') }}"
+  block:
+    - set_fact:
+        create_db_name: "{{ lookup('password', '/tmp/_name length=5 chars=ascii_letters') }}"
+        create_db_user: "{{ lookup('password', '/tmp/_user length=5 chars=ascii_letters') }}"
+        create_db_password: "{{ lookup('password', '/dev/null length=24 chars=ascii_letters') }}"
+    - name: Encode bind credentials
+      asb_encode_binding:
+        fields:
+          DB_TYPE: "{{ 'mariadb' }}"
+          DB_NAME: "{{ create_db_name }}"
+          DB_HOST: "{{ app_name }}"
+          DB_PORT: "{{ mariadb_port }}"
+          DB_USER: "{{ create_db_user }}"
+          DB_PASSWORD: "{{ create_db_password }}"
 
-- name: get generated DB credentials
-  when: apb_action == 'deprovision'
-  set_fact:
-    create_db_name: "{{ _apb_provision_creds.DB_NAME }}"
-    create_db_user: "{{ _apb_provision_creds.DB_USER }}"
-    create_db_password: "{{ _apb_provision_creds.DB_PASSWORD }}"
+- when: apb_action == 'deprovision'
+  block:
+    - name: get generated DB credentials
+      set_fact:
+        r_cred_secret: "{{ lookup('k8s', kind='Secret', namespace=namespace, resource_name=app_name) }}"
+    - set_fact:
+        create_db_name: "{{ r_cred_secret.data.DB_NAME | b64decode }}"
+        create_db_user: "{{ r_cred_secret.data.DB_USER | b64decode }}"
 
 - name: "{{ apb_action }} database"
   mysql_db:
@@ -48,7 +60,7 @@
   mysql_user:
     state: "{{ ensure_state }}"
     name: "{{ create_db_user }}"
-    password: "{{ create_db_password }}"
+    password: "{{ create_db_password | default('') }}"
     priv: "{{ create_db_name }}.*:ALL"
     host: "%"
     login_host: "{{ mariadb_hostname }}"
@@ -68,16 +80,19 @@
     type: ExternalName
     external_name: "{{ mariadb_hostname }}"
 
-- when: apb_action == 'provision'
-  name: Encode bind credentials
-  asb_encode_binding:
-    fields:
-      DB_TYPE: mariadb
-      DB_NAME: "{{ create_db_name }}"
-      DB_HOST: "{{ app_name }}"
-      DB_PORT: "{{ mariadb_port }}"
-      DB_USER: "{{ create_db_user }}"
-      DB_PASSWORD: "{{ create_db_password }}"
+- name: "{{ apb_action }} secret with DB credentials"
+  k8s:
+    state: "{{ ensure_state }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ app_name }}"
+        namespace: "{{ namespace }}"
+      type: Opaque
+      data:
+        DB_NAME: "{{ create_db_name | b64encode }}"
+        DB_USER: "{{ create_db_user | b64encode }}"
 
 - name: update last operation
   asb_last_operation:
